@@ -1,5 +1,7 @@
 # MemoryOverflow Publish
 
+[![Build Status](https://travis-ci.org/CodeCorico/MemoryOverflow-publish.svg)](https://travis-ci.org/CodeCorico/MemoryOverflow-publish)
+
 Automated website publication system.
 
 :exclamation: This repo does't take contribution PR. It's maintained by the CodeCorico team. But you can still post issues.
