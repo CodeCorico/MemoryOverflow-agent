@@ -4,14 +4,18 @@
   "version": "0.0.1",
   "main": "publish.js",
   "scripts": {
-    "start": "node publish.js"
+    "start": "node publish.js",
+    "test": "mocha --timeout 60000"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/CodeCorico/MemoryOverflow-publish.git"
   },
   "dependencies": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "mocha": "^1.21.4",
+    "chai": "^1.9.2"
+  },
   "optionalDependencies": {},
   "licenses": [{
     "type": "MIT",
