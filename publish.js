@@ -17,6 +17,8 @@ var server = new Server(SERVER_PORT, function(request, response, body) {
       hash = crypto.createHmac('sha1', SECRET).update(body).digest('hex'),
       post = JSON.parse(body);
 
+  signature = signature ? signature.replace('sha1=', '') : signature;
+
   if(event != 'push' || signature != hash) {
     console.log('new hash:', hash);
     return response.forbidden();
@@ -26,7 +28,7 @@ var server = new Server(SERVER_PORT, function(request, response, body) {
       url = post.commits && post.commits.length ? post.commits[0].url : null;
 
   if(!commitID || !url) {
-    response.forbidden();
+    return response.forbidden();
   }
 
   var commitLabel = LABEL
