@@ -14,7 +14,7 @@ var crypto = require('crypto'),
     MEMORYOVERFLOW_PATH = 'memoryoverflow',
     WEBSITE_REPO = 'https://github.com/CodeCorico/MemoryOverflow-website.git',
     WEBSITE_PATH = 'website',
-    COMMIT_LABEL = 'release: master-{commitID}\n\nCommit: {commitUrl}';
+    COMMIT_LABEL = 'release: master-{commitID}\n\nMemoryOverflow commit origin: {commitUrl}';
 
 var server = new Server(SERVER_PORT, function(request, response, body) {
   if(request.method != 'POST') {
