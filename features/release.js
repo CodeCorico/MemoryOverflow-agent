@@ -32,10 +32,19 @@ function _rmRecursive(path, callback) {
   }
 }
 
+function _cleanWorkspace() {
+  if(fs.existsSync(WORK_PATH)) {
+    console.log('rm -F ' + WORK_PATH);
+    _rmRecursive(WORK_PATH);
+  }
+}
+
 function _error(error) {
   console.error('\n\nERROR!\n');
   console.error(error);
   console.error('\n\n');
+
+  _cleanWorkspace();
 
   return false;
 }
@@ -53,9 +62,7 @@ module.exports = function release(config, callback) {
     commitUrl: ''
   }, config);
 
-  if(fs.existsSync(WORK_PATH)) {
-    _rmRecursive(WORK_PATH);
-  }
+  _cleanWorkspace();
 
   config.MEMORYOVERFLOW_PATH = WORK_PATH + '/' + config.MEMORYOVERFLOW_PATH;
   config.WEBSITE_PATH = WORK_PATH + '/' + config.WEBSITE_PATH;
@@ -119,6 +126,8 @@ module.exports = function release(config, callback) {
               if (error) {
                 return _error(error);
               }
+
+              _cleanWorkspace();
 
               console.log('\n\nALL IS DONE!\n\n');
 
