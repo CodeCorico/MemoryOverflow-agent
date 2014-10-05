@@ -14,7 +14,8 @@
   "dependencies": {},
   "devDependencies": {
     "mocha": "^1.21.4",
-    "chai": "^1.9.2"
+    "chai": "^1.9.2",
+    "superagent": "^0.20.0"
   },
   "optionalDependencies": {},
   "licenses": [{
