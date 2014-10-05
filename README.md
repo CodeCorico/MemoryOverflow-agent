@@ -12,4 +12,4 @@ MemoryOverflow is a card game designed by developers for developers. Go to http:
 
 * [Website](http://memoryoverflow.codecorico.com)
 * [Licence](https://github.com/CodeCorico/MemoryOverflow-website/blob/master/LICENSE)
-* [GitHub contribution Project](https://github.com/CodeCorico/MemoryOverflowd)
+* [GitHub contribution Project](https://github.com/CodeCorico/MemoryOverflow)
