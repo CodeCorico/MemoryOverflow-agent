@@ -2,10 +2,19 @@
 
 var crypto = require('crypto'),
     fs = require('fs'),
+    workerFarm = require('worker-farm'),
+    releaseWorker = workerFarm(require.resolve('./features/release.js')),
     Server = require('./features/server.js'),
+
     SECRET = fs.readFileSync('SECRET', 'utf8').trim(),
     SERVER_PORT = 8124,
-    LABEL = 'release: master-{commitID}\n\nCommit: {url}';
+    USER_AGENT = 'MemoryOverflowAgent',
+    USER_AGENT_EMAIL = 'memoryoverflow@codecorico.com',
+    MEMORYOVERFLOW_REPO = 'https://github.com/CodeCorico/MemoryOverflow.git',
+    MEMORYOVERFLOW_PATH = 'memoryoverflow',
+    WEBSITE_REPO = 'https://github.com/CodeCorico/MemoryOverflow-website.git',
+    WEBSITE_PATH = 'website',
+    COMMIT_LABEL = 'release: master-{commitID}\n\nCommit: {commitUrl}';
 
 var server = new Server(SERVER_PORT, function(request, response, body) {
   if(request.method != 'POST') {
@@ -20,22 +29,30 @@ var server = new Server(SERVER_PORT, function(request, response, body) {
   signature = signature ? signature.replace('sha1=', '') : signature;
 
   if(event != 'push' || signature != hash) {
-    console.log('new hash:', hash);
     return response.forbidden();
   }
 
   var commitID = post.after || null,
-      url = post.commits && post.commits.length ? post.commits[0].url : null;
+      commitUrl = post.commits && post.commits.length ? post.commits[0].url : null;
 
-  if(!commitID || !url) {
+  if(!commitID || !commitUrl) {
     return response.forbidden();
   }
 
-  var commitLabel = LABEL
-    .replace('{commitID}', commitID)
-    .replace('{url}', url);
+  releaseWorker({
+    USER_AGENT: USER_AGENT,
+    USER_AGENT_EMAIL: USER_AGENT_EMAIL,
+    SECRET: SECRET,
+    MEMORYOVERFLOW_REPO: MEMORYOVERFLOW_REPO,
+    MEMORYOVERFLOW_PATH: MEMORYOVERFLOW_PATH,
+    WEBSITE_REPO: WEBSITE_REPO,
+    WEBSITE_PATH: WEBSITE_PATH,
+    COMMIT_LABEL: COMMIT_LABEL,
+    commitID: commitID,
+    commitUrl: commitUrl
+  }, function() {
+    console.log('\nRelease done\n\n');
+  });
 
-  console.log(commitLabel);
-
-  return response.ok();
+  response.ok();
 });
