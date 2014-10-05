@@ -19,7 +19,7 @@ function _error(error, callback) {
   _cleanWorkspace();
 
   if(callback) {
-    callback();
+    callback(false);
   }
 
   return false;
@@ -122,7 +122,7 @@ module.exports = function release(config, callback) {
 
                 console.log('\n\nALL IS DONE!\n\n');
 
-                callback();
+                callback(true);
 
               });
             });

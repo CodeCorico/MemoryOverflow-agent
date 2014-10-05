@@ -1,7 +1,7 @@
 'use strict';
 
 var crypto = require('crypto'),
-    fs = require('fs'),
+    fs = require('fs-extra'),
     workerFarm = require('worker-farm'),
     releaseWorker = workerFarm(require.resolve('./features/release.js')),
     Server = require('./features/server.js'),
@@ -15,6 +15,14 @@ var crypto = require('crypto'),
     WEBSITE_REPO = 'https://github.com/CodeCorico/MemoryOverflow-website.git',
     WEBSITE_PATH = 'website',
     COMMIT_LABEL = 'release: master-{commitID}\n\nMemoryOverflow commit origin: {commitUrl}';
+
+function _status(status) {
+  if(fs.existsSync('status.svg')) {
+    fs.remove('status.svg');
+  }
+
+  fs.copy(status + '.svg', 'status.svg');
+}
 
 var server = new Server(SERVER_PORT, function(request, response, body) {
   if(request.method != 'POST') {
@@ -39,6 +47,8 @@ var server = new Server(SERVER_PORT, function(request, response, body) {
     return response.forbidden();
   }
 
+  _status('processing');
+
   releaseWorker({
     USER_AGENT: USER_AGENT,
     USER_AGENT_EMAIL: USER_AGENT_EMAIL,
@@ -50,7 +60,16 @@ var server = new Server(SERVER_PORT, function(request, response, body) {
     COMMIT_LABEL: COMMIT_LABEL,
     commitID: commitID,
     commitUrl: commitUrl
-  }, function() {});
+  }, function(success) {
+
+    if(success) {
+      _status('ok');
+    }
+    else {
+      _status('error');
+    }
+
+  });
 
   response.ok();
 });
