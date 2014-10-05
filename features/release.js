@@ -32,6 +32,14 @@ function _rmRecursive(path, callback) {
   }
 }
 
+function _error(error) {
+  console.error('\n\nERROR!\n');
+  console.error(error);
+  console.error('\n\n');
+
+  return false;
+}
+
 module.exports = function release(config, callback) {
   config = extend(true, {
     USER_AGENT: '',
@@ -56,24 +64,21 @@ module.exports = function release(config, callback) {
 
   cmd.exec('git clone ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH, function(error, stdout, stderr) {
     if(error) {
-      // sendmail please
-      return;
+      return _error(error);
     }
 
     console.log('\ngit clone ' + config.WEBSITE_REPO + ' ' + config.WEBSITE_PATH + '...');
 
     cmd.exec('git clone ' + config.WEBSITE_REPO + ' ' + config.WEBSITE_PATH, function(error, stdout, stderr) {
       if(error) {
-        // sendmail please
-        return;
+        return _error(error);
       }
 
     console.log('\ncopy ' + config.MEMORYOVERFLOW_PATH + '/website' + ' ' + config.WEBSITE_PATH + '...');
 
-      ncp(config.MEMORYOVERFLOW_PATH + '/website', config.WEBSITE_PATH, function (err) {
-        if (err) {
-          // sendmail please
-          return;
+      ncp(config.MEMORYOVERFLOW_PATH + '/website', config.WEBSITE_PATH, function (error) {
+        if (error) {
+          return _error(error);
         }
 
         console.log('\ngit add -A');
@@ -81,9 +86,8 @@ module.exports = function release(config, callback) {
         cmd.exec('git add -A', {
           cwd: config.WEBSITE_PATH
         }, function(error, stdout, stderr) {
-          if (err) {
-            // sendmail please
-            return;
+          if (error) {
+            return _error(error);
           }
 
           var commitAuthor = ' --author="' + config.USER_AGENT + ' <' + config.USER_AGENT_EMAIL + '>"',
@@ -101,9 +105,8 @@ module.exports = function release(config, callback) {
           cmd.exec('git commit' + commitAuthor + commitLabel, {
             cwd: config.WEBSITE_PATH
           }, function(error, stdout, stderr) {
-            if (err) {
-              // sendmail please
-              return;
+            if (error) {
+              return _error(error);
             }
 
             var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
@@ -113,6 +116,9 @@ module.exports = function release(config, callback) {
             cmd.exec('git push ' + pushRepo + ' gh-pages', {
               cwd: config.WEBSITE_PATH
             }, function(error, stdout, stderr) {
+              if (error) {
+                return _error(error);
+              }
 
               console.log('\n\nALL IS DONE!\n\n');
 
