@@ -11,7 +11,9 @@
     "type": "git",
     "url": "https://github.com/CodeCorico/MemoryOverflow-publish.git"
   },
-  "dependencies": {},
+  "dependencies": {
+    "worker-farm": "^1.0.1"
+  },
   "devDependencies": {
     "mocha": "^1.21.4",
     "chai": "^1.9.2",
