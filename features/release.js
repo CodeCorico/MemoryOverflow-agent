@@ -1,41 +1,13 @@
 var extend = require('extend'),
-    fs = require('fs'),
+    fs = require('fs-extra'),
     cmd = require('child_process'),
-    ncp = require('ncp').ncp,
-    isWindows = /^win/.test(process.platform),
 
     WORK_PATH = 'work';
 
-function _rmRecursive(path, callback) {
-  if(isWindows) {
-    cmd.exec('rmdir /S/Q ' + path, callback);
-    return;
-  }
-
-  var files = [];
-  if(fs.existsSync(path)) {
-    files = fs.readdirSync(path);
-    files.forEach(function(file, index) {
-      var curPath = path + '/' + file;
-      if(fs.lstatSync(curPath).isDirectory()) {
-        _rmRecursive(curPath);
-      }
-      else {
-        fs.unlinkSync(curPath);
-      }
-    });
-    fs.rmdirSync(path);
-  }
-
-  if(callback) {
-    callback();
-  }
-}
-
 function _cleanWorkspace() {
   if(fs.existsSync(WORK_PATH)) {
-    console.log('rm -F ' + WORK_PATH);
-    _rmRecursive(WORK_PATH);
+    console.log('remove path ' + WORK_PATH);
+    fs.remove(WORK_PATH);
   }
 }
 
@@ -87,57 +59,53 @@ module.exports = function release(config, callback) {
 
       console.log('\ncopy ' + config.MEMORYOVERFLOW_PATH + '/website' + ' ' + config.WEBSITE_PATH + '...');
 
-      ncp(config.MEMORYOVERFLOW_PATH + '/website', config.WEBSITE_PATH, function (error) {
+      fs.copySync(config.MEMORYOVERFLOW_PATH + '/website', config.WEBSITE_PATH);
+
+      console.log('\ngit add -A');
+
+      cmd.exec('git add -A', {
+        cwd: config.WEBSITE_PATH
+      }, function(error, stdout, stderr) {
         if(error) {
           return _error(error, callback);
         }
 
-        console.log('\ngit add -A');
+        var commitAuthor = ' --author="' + config.USER_AGENT + ' <' + config.USER_AGENT_EMAIL + '>"',
+            commitLabel = config.COMMIT_LABEL
+              .replace('{commitID}', config.commitID)
+              .replace('{commitUrl}', config.commitUrl)
+              .split('\n')
+              .map(function(line) {
+                return ' -m "' + line + '"';
+              })
+              .join('');
 
-        cmd.exec('git add -A', {
+        console.log('\ngit commit' + commitAuthor + commitLabel);
+
+        cmd.exec('git commit' + commitAuthor + commitLabel, {
           cwd: config.WEBSITE_PATH
         }, function(error, stdout, stderr) {
           if(error) {
             return _error(error, callback);
           }
 
-          var commitAuthor = ' --author="' + config.USER_AGENT + ' <' + config.USER_AGENT_EMAIL + '>"',
-              commitLabel = config.COMMIT_LABEL
-                .replace('{commitID}', config.commitID)
-                .replace('{commitUrl}', config.commitUrl)
-                .split('\n')
-                .map(function(line) {
-                  return ' -m "' + line + '"';
-                })
-                .join('');
+          var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
 
-          console.log('\ngit commit' + commitAuthor + commitLabel);
+          console.log('\ngit push ' + pushRepo + ' gh-pages');
 
-          cmd.exec('git commit' + commitAuthor + commitLabel, {
+          cmd.exec('git push ' + pushRepo + ' gh-pages', {
             cwd: config.WEBSITE_PATH
           }, function(error, stdout, stderr) {
             if(error) {
               return _error(error, callback);
             }
 
-            var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
+            _cleanWorkspace();
 
-            console.log('\ngit push ' + pushRepo + ' gh-pages');
+            console.log('\n\nALL IS DONE!\n\n');
 
-            cmd.exec('git push ' + pushRepo + ' gh-pages', {
-              cwd: config.WEBSITE_PATH
-            }, function(error, stdout, stderr) {
-              if(error) {
-                return _error(error, callback);
-              }
+            callback();
 
-              _cleanWorkspace();
-
-              console.log('\n\nALL IS DONE!\n\n');
-
-              callback();
-
-            });
           });
         });
       });
