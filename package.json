@@ -12,6 +12,7 @@
     "url": "https://github.com/CodeCorico/MemoryOverflow-publish.git"
   },
   "dependencies": {
+    "extend": "^2.0.0",
     "ncp": "^1.0.1",
     "worker-farm": "^1.0.1"
   },
