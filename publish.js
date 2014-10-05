@@ -50,9 +50,7 @@ var server = new Server(SERVER_PORT, function(request, response, body) {
     COMMIT_LABEL: COMMIT_LABEL,
     commitID: commitID,
     commitUrl: commitUrl
-  }, function() {
-    console.log('\nRelease done\n\n');
-  });
+  }, function() {});
 
   response.ok();
 });
