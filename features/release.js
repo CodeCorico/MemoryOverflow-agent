@@ -45,14 +45,14 @@ module.exports = function release(config, callback) {
 
   console.log('\ngit clone ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH + '...');
 
-  cmd.exec('git clone ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH, function(error, stdout, stderr) {
+  cmd.exec('git clone ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH, function(error) {
     if(error) {
       return _error(error, callback);
     }
 
     console.log('\ngit clone ' + config.WEBSITE_REPO + ' ' + config.WEBSITE_PATH + '...');
 
-    cmd.exec('git clone ' + config.WEBSITE_REPO + ' ' + config.WEBSITE_PATH, function(error, stdout, stderr) {
+    cmd.exec('git clone ' + config.WEBSITE_REPO + ' ' + config.WEBSITE_PATH, function(error) {
       if(error) {
         return _error(error, callback);
       }
@@ -65,7 +65,7 @@ module.exports = function release(config, callback) {
 
       cmd.exec('git config user.name "' + config.USER_AGENT + '"', {
         cwd: config.WEBSITE_PATH
-      }, function(error, stdout, stderr) {
+      }, function(error) {
         if(error) {
           return _error(error, callback);
         }
@@ -74,7 +74,7 @@ module.exports = function release(config, callback) {
 
         cmd.exec('git config user.email "' + config.USER_AGENT_EMAIL + '"', {
           cwd: config.WEBSITE_PATH
-        }, function(error, stdout, stderr) {
+        }, function(error) {
           if(error) {
             return _error(error, callback);
           }
@@ -83,7 +83,7 @@ module.exports = function release(config, callback) {
 
           cmd.exec('git add -A', {
             cwd: config.WEBSITE_PATH
-          }, function(error, stdout, stderr) {
+          }, function(error) {
             if(error) {
               return _error(error, callback);
             }
@@ -102,7 +102,7 @@ module.exports = function release(config, callback) {
 
             cmd.exec('git commit' + commitAuthor + commitLabel, {
               cwd: config.WEBSITE_PATH
-            }, function(error, stdout, stderr) {
+            }, function(error) {
               if(error) {
                 return _error(error, callback);
               }
@@ -113,7 +113,7 @@ module.exports = function release(config, callback) {
 
               cmd.exec('git push ' + pushRepo + ' gh-pages', {
                 cwd: config.WEBSITE_PATH
-              }, function(error, stdout, stderr) {
+              }, function(error) {
                 if(error) {
                   return _error(error, callback);
                 }
