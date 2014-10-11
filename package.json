@@ -1,6 +1,10 @@
 {
   "name": "memoryoverflow-publish",
   "description": "Automated website publication system",
+  "author": "CodeCorico",
+  "bugs": {
+    "url": "https://github.com/CodeCorico/MemoryOverflow-publish/issues"
+  },
   "version": "0.0.1",
   "main": "publish.js",
   "scripts": {
