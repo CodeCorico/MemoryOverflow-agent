@@ -75,80 +75,84 @@ module.exports = function release(config, callback) {
 
       fs.copySync(config.MEMORYOVERFLOW_PATH + '/website', config.WEBSITE_PATH);
 
-      fs.moveSync(config.WEBSITE_PATH + '/README.tmp', config.WEBSITE_PATH + '/README.md');
-
-      console.log('\ngit config user.name "' + config.USER_AGENT + '"');
-
-      cmd.exec('git config user.name "' + config.USER_AGENT + '"', {
-        cwd: config.WEBSITE_PATH
-      }, function(error) {
+      fs.move(config.WEBSITE_PATH + '/README.tmp', config.WEBSITE_PATH + '/README.md', function(error) {
         if(error) {
           return _error(error, callback);
         }
 
-        console.log('\ngit config user.email "' + config.USER_AGENT_EMAIL + '"');
+        console.log('\ngit config user.name "' + config.USER_AGENT + '"');
 
-        cmd.exec('git config user.email "' + config.USER_AGENT_EMAIL + '"', {
+        cmd.exec('git config user.name "' + config.USER_AGENT + '"', {
           cwd: config.WEBSITE_PATH
         }, function(error) {
           if(error) {
             return _error(error, callback);
           }
 
-          console.log('\ngit add -A');
+          console.log('\ngit config user.email "' + config.USER_AGENT_EMAIL + '"');
 
-          cmd.exec('git add -A', {
+          cmd.exec('git config user.email "' + config.USER_AGENT_EMAIL + '"', {
             cwd: config.WEBSITE_PATH
-          }, function(error, stdout) {
+          }, function(error) {
             if(error) {
               return _error(error, callback);
             }
 
-            cmd.exec('git status', {
+            console.log('\ngit add -A');
+
+            cmd.exec('git add -A', {
               cwd: config.WEBSITE_PATH
             }, function(error, stdout) {
               if(error) {
                 return _error(error, callback);
               }
 
-              var status = stdout.split('\n');
-              if(status.length && status[1].trim() == 'nothing to commit, working directory clean') {
-                console.log('NOTHING TO COMMIT');
-                return _success(callback);
-              }
-
-              var commitAuthor = ' --author="' + config.USER_AGENT + ' <' + config.USER_AGENT_EMAIL + '>"',
-                  commitLabel = config.COMMIT_LABEL
-                    .replace('{commitID}', config.commitID)
-                    .replace('{commitUrl}', config.commitUrl)
-                    .split('\n')
-                    .map(function(line) {
-                      return ' -m "' + line + '"';
-                    })
-                    .join('');
-
-              console.log('\ngit commit' + commitAuthor + commitLabel);
-
-              cmd.exec('git commit' + commitAuthor + commitLabel, {
+              cmd.exec('git status', {
                 cwd: config.WEBSITE_PATH
-              }, function(error) {
+              }, function(error, stdout) {
                 if(error) {
                   return _error(error, callback);
                 }
 
-                var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
+                var status = stdout.split('\n');
+                if(status.length && status[1].trim() == 'nothing to commit, working directory clean') {
+                  console.log('NOTHING TO COMMIT');
+                  return _success(callback);
+                }
 
-                console.log('\ngit push ' + pushRepo + ' gh-pages');
+                var commitAuthor = ' --author="' + config.USER_AGENT + ' <' + config.USER_AGENT_EMAIL + '>"',
+                    commitLabel = config.COMMIT_LABEL
+                      .replace('{commitID}', config.commitID)
+                      .replace('{commitUrl}', config.commitUrl)
+                      .split('\n')
+                      .map(function(line) {
+                        return ' -m "' + line + '"';
+                      })
+                      .join('');
 
-                cmd.exec('git push ' + pushRepo + ' gh-pages', {
+                console.log('\ngit commit' + commitAuthor + commitLabel);
+
+                cmd.exec('git commit' + commitAuthor + commitLabel, {
                   cwd: config.WEBSITE_PATH
                 }, function(error) {
                   if(error) {
                     return _error(error, callback);
                   }
 
-                  return _success(callback);
+                  var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
 
+                  console.log('\ngit push ' + pushRepo + ' gh-pages');
+
+                  cmd.exec('git push ' + pushRepo + ' gh-pages', {
+                    cwd: config.WEBSITE_PATH
+                  }, function(error) {
+                    if(error) {
+                      return _error(error, callback);
+                    }
+
+                    return _success(callback);
+
+                  });
                 });
               });
             });
