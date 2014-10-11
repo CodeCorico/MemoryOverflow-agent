@@ -71,7 +71,11 @@ module.exports = function release(config, callback) {
 
       console.log('\ncopy ' + config.MEMORYOVERFLOW_PATH + '/website' + ' ' + config.WEBSITE_PATH + '...');
 
+      fs.copySync(config.WEBSITE_PATH + '/README.md', config.WEBSITE_PATH + '/README.tmp');
+
       fs.copySync(config.MEMORYOVERFLOW_PATH + '/website', config.WEBSITE_PATH);
+
+      fs.moveSync(config.WEBSITE_PATH + '/README.tmp', config.WEBSITE_PATH + '/README.md');
 
       console.log('\ngit config user.name "' + config.USER_AGENT + '"');
 
