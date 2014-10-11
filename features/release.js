@@ -75,7 +75,9 @@ module.exports = function release(config, callback) {
 
       fs.copySync(config.MEMORYOVERFLOW_PATH + '/website', config.WEBSITE_PATH);
 
-      fs.move(config.WEBSITE_PATH + '/README.tmp', config.WEBSITE_PATH + '/README.md', function(error) {
+      fs.move(config.WEBSITE_PATH + '/README.tmp', config.WEBSITE_PATH + '/README.md', {
+        clobber: true
+      }, function(error) {
         if(error) {
           return _error(error, callback);
         }
