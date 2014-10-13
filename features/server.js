@@ -1,13 +1,8 @@
 'use strict';
 
-var http = require('http'),
-    querystring = require('querystring');
+var http = require('http');
 
 var Response = function(response) {
-
-  this.data = function() {
-    return response;
-  };
 
   this.ok = function(result) {
     result = result || {};
