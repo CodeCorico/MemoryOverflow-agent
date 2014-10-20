@@ -16,6 +16,7 @@
       MEMORYOVERFLOW_PATH = 'memoryoverflow',
       WEBSITE_REPO = 'https://github.com/CodeCorico/MemoryOverflow-website.git',
       WEBSITE_PATH = 'website',
+      THEMACHINE_PATH = 'the-machine',
       COMMIT_LABEL = 'release: master-{commitID}\n\nMemoryOverflow commit origin: {commitUrl}';
 
   new Server(SERVER_PORT, function(request, response, body) {
@@ -49,6 +50,7 @@
       SECRET: SECRET,
       MEMORYOVERFLOW_REPO: MEMORYOVERFLOW_REPO,
       MEMORYOVERFLOW_PATH: MEMORYOVERFLOW_PATH,
+      THEMACHINE_PATH: THEMACHINE_PATH,
       WEBSITE_REPO: WEBSITE_REPO,
       WEBSITE_PATH: WEBSITE_PATH,
       COMMIT_LABEL: COMMIT_LABEL,
