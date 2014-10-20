@@ -1,6 +1,7 @@
 var extend = require('extend'),
     fs = require('fs-extra'),
     cmd = require('child_process'),
+    glob = require('glob'),
 
     WORK_PATH = 'work';
 
@@ -100,6 +101,14 @@ module.exports = function release(config, callback) {
           }, function(error) {
             if(error) {
               return _error(error, callback);
+            }
+
+            console.log('\nremove EJS files...');
+            var ejsFiles = glob.sync(config.WEBSITE_PATH + '/**/*.ejs' , {});
+            console.log(ejsFiles);
+
+            for(var i = 0, len = ejsFiles.length; i < len; i++) {
+              fs.removeSync(ejsFiles[i]);
             }
 
             console.log('\ngit config user.name "' + config.USER_AGENT + '"');
