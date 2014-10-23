@@ -58,9 +58,9 @@ module.exports = function release(config, callback) {
   config.WEBSITE_PATH = WORK_PATH + '/' + config.WEBSITE_PATH;
   config.THEMACHINE_PATH = config.MEMORYOVERFLOW_PATH + '/' + config.THEMACHINE_PATH;
 
-  console.log('\ngit clone ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH + '...');
+  console.log('\ngit clone --depth 1 ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH + '...');
 
-  cmd.exec('git clone ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH, function(error) {
+  cmd.exec('git clone --depth 1 ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH, function(error) {
     if(error) {
       return _error(error, callback);
     }
