@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/CodeCorico/MemoryOverflow-publish.svg)](https://travis-ci.org/CodeCorico/MemoryOverflow-publish)
 [![Coverage Status](https://img.shields.io/coveralls/CodeCorico/MemoryOverflow-publish.svg)](https://coveralls.io/r/CodeCorico/MemoryOverflow-publish)
-[![Website Status](http://publish.memoryoverflow.codecorico.com/status.svg)](https://github.com/CodeCorico/MemoryOverflow-website)
+[![Website Status](http://publish.memoryoverflow.org/status.svg)](https://github.com/CodeCorico/MemoryOverflow-website)
 
 Automated website publication system.
 
