@@ -5,6 +5,7 @@
       fs = require('fs-extra'),
       workerFarm = require('worker-farm'),
       websiteReleaseWorker = workerFarm(require.resolve('./features/website-release.js')),
+      githubControllerWorker = workerFarm(require.resolve('./features/github-controller.js')),
       Server = require('./features/server.js'),
       buildStatus = require('./features/build-status/build-status.js'),
 
@@ -12,7 +13,9 @@
       SERVER_PORT = 8124,
       USER_AGENT = 'MemoryOverflowAgent',
       USER_AGENT_EMAIL = 'memoryoverflow@codecorico.com',
-      MEMORYOVERFLOW_REPO = 'https://github.com/CodeCorico/MemoryOverflow.git',
+      MEMORYOVERFLOW_OWNER = 'CodeCorico',
+      MEMORYOVERFLOW_PROJECT = 'MemoryOverflow',
+      MEMORYOVERFLOW_REPO = 'https://github.com/' + MEMORYOVERFLOW_OWNER + '/' + MEMORYOVERFLOW_PROJECT + '.git',
       MEMORYOVERFLOW_PATH = 'memoryoverflow',
       WEBSITE_REPO = 'https://github.com/CodeCorico/MemoryOverflow-website.git',
       WEBSITE_PATH = 'website',
@@ -29,25 +32,20 @@
         hash = crypto.createHmac('sha1', SECRET).update(body).digest('hex'),
         post = JSON.parse(body);
 
-    console.log(request.headers);
-    console.log('\n\n');
-    console.log(post);
-    return response.ok();
-
     signature = signature ? signature.replace('sha1=', '') : signature;
 
-    if(event != 'push' || signature != hash) {
+    if(signature != hash) {
       return response.forbidden();
     }
 
-    var commitID = post.after || null,
-        commitUrl = post.commits && post.commits.length ? post.commits[0].url : null;
+    if(event == 'push') {
+      var commitID = post.after || null,
+          commitUrl = post.commits && post.commits.length ? post.commits[0].url : null;
 
-    if(!commitID || !commitUrl) {
-      return response.forbidden();
-    }
+      if(!commitID || !commitUrl) {
+        return response.forbidden();
+      }
 
-    if(post.action == 'push') {
       buildStatus.status('processing');
 
       websiteReleaseWorker({
@@ -66,11 +64,24 @@
         buildStatus.status(success ? 'ok' : 'error');
       });
     }
-    else if(post.action == 'pull_request') {
+    else if(
+      (event == 'pull_request' && post.action == 'opened') ||
+      (event == 'issues' && post.action == 'opened')
+    ) {
+
+      githubControllerWorker({
+        USER_AGENT: USER_AGENT,
+        USER_AGENT_EMAIL: USER_AGENT_EMAIL,
+        SECRET: SECRET,
+        MEMORYOVERFLOW_OWNER: MEMORYOVERFLOW_OWNER,
+        MEMORYOVERFLOW_PROJECT: MEMORYOVERFLOW_PROJECT,
+        event: event,
+        post: post
+      }, function() {});
 
     }
-    else if(post.action == 'issues') {
-
+    else {
+      return response.forbidden();
     }
 
     response.ok();
