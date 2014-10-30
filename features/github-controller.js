@@ -1,14 +1,19 @@
 'use strict';
 
-// http://mikedeboer.github.io/node-github/#issues.prototype.createComment
+// http://mikedeboer.github.io/node-github/
 
 var GitHubApi = require('github'),
-    extend = require('extend');
+    extend = require('extend'),
+
+    LABELS = {
+      NEEDS_FORMATTING: 'needs: user story/bug format'
+    },
+    USERSTORY_LINK = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-user-story-for-a-new-feature',
+    BUG_LINK = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-how-to-reproduce-for-a-bug';
 
 function _github(OWNER, PROJECT, AGENT, SECRET) {
   var github = new GitHubApi({
-    version: '3.0.0',
-    debug: true
+    version: '3.0.0'
   });
 
   github.authenticate({
@@ -27,20 +32,34 @@ function _github(OWNER, PROJECT, AGENT, SECRET) {
   return github;
 }
 
-function _checkIssueMessage(comments, labels, issue) {
+function _issueIsFormatted(issue) {
   var userstoryRegex = /^as a .* i want .* so that/gi,
       bugRegex = /^\*\*bug\*\*\n\n((.|\n)*)\n\n\*\*how to reproduce\*\*/gi,
-      userstoryLink = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-user-story-for-a-new-feature',
-      bugLink = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-how-to-reproduce-for-a-bug';
+      body = issue.body
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n');
 
-  if(!issue.body || !userstoryRegex.exec(issue.body) || !bugRegex.exec(issue.body)) {
+  return body && (userstoryRegex.test(body) || bugRegex.test(body));
+}
+
+function _checkIssueMessage(comments, labels, issue) {
+  if(!_issueIsFormatted(issue)) {
     comments.push(
-      'Your issue should be in [User Story](userstoryLink) or [Bug](bugLink) format.'
-        .replace('userstoryLink', userstoryLink)
-        .replace('bugLink', bugLink)
+      'Your issue should be in [User Story](USERSTORY_LINK) or [Bug](BUG_LINK) format.'
+        .replace('USERSTORY_LINK', USERSTORY_LINK)
+        .replace('BUG_LINK', BUG_LINK)
     );
 
-    labels.push('needs: user story/bug format');
+    labels.push(LABELS.NEEDS_FORMATTING);
+  }
+}
+
+function _checkIssueFormatting(comments, labels, issue) {
+  if(_issueIsFormatted(issue)) {
+    var index = labels.indexOf(LABELS.NEEDS_FORMATTING);
+    if(index > -1) {
+      labels.splice(index, 1);
+    }
   }
 }
 
@@ -73,6 +92,14 @@ module.exports = function githubController(config, callback) {
   if(config.event == 'issues' && config.post.action == 'opened') {
     _checkIssueMessage(comments, labels, issue);
   }
+  // commented issue
+  else if(config.event == 'issue_comment' && config.post.action == 'created') {
+    var comment = config.post.comment;
+
+    if(labels.indexOf(LABELS.NEEDS_FORMATTING) > -1 && issue.user.login == comment.user.login) {
+      _checkIssueFormatting(comments, labels, issue);
+    }
+  }
 
   labelsChanged = labelsOrigin != JSON.stringify(labels);
 
@@ -81,7 +108,7 @@ module.exports = function githubController(config, callback) {
   }
 
   if(comments.length > 0) {
-    var comment =
+    var commentBody =
       ':+1: Thanks for your issue **Agent ' + issue.user.login + '!**\n\n' +
       'However, The Machine has very specific contribution rules. Please update your issue by following these goals:\n' +
       checkbox + comments.join('\n' + checkbox) + '\n\n' +
@@ -89,9 +116,9 @@ module.exports = function githubController(config, callback) {
 
     github.exec(github.issues.createComment, {
       number: issue.number,
-      body: comment
-    }, function(err, res) {
-      console.log(JSON.stringify(res));
+      body: commentBody
+    }, function() {
+      console.log('commented');
     });
   }
 
@@ -99,10 +126,8 @@ module.exports = function githubController(config, callback) {
     github.exec(github.issues.edit, {
       number: issue.number,
       labels: labels
-    }, function(err, res) {
-      console.log(err);
-      console.log('----------------------');
-      console.log(JSON.stringify(res));
+    }, function() {
+      console.log('labels updated: ', labels);
     });
   }
 
