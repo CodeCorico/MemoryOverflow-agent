@@ -15,6 +15,7 @@ The Machine Special Agent for automated tasks.
   - Post a comment on the issue that explains how to format the message
   - Add the `needs: user story/bug format` label
 - If an Agent fix its issue and add a comment, MemoryOverflowAgent checks the new formatting issue and remove the `needs: user story/bug format` label if the format is valid.
+- When an Agent post a new comment on an issue, MemoryOverflowAgent checks how many there are votes :+1: (or `+1`) and apply special labels on the issue.
 
 ## Follow the project
 

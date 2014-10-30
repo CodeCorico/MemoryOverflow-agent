@@ -6,10 +6,14 @@ var GitHubApi = require('github'),
     extend = require('extend'),
 
     LABELS = {
-      NEEDS_FORMATTING: 'needs: user story/bug format'
+      NEEDS_FORMATTING: 'needs: user story/bug format',
+      VOTE_10: 'votes: +10',
+      VOTE_20: 'votes: +20',
+      VOTE_50: 'votes: +50'
     },
     USERSTORY_LINK = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-user-story-for-a-new-feature',
-    BUG_LINK = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-how-to-reproduce-for-a-bug';
+    BUG_LINK = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-how-to-reproduce-for-a-bug',
+    VOTE_SYMBOL = '+1';
 
 function _github(OWNER, PROJECT, AGENT, SECRET) {
   var github = new GitHubApi({
@@ -42,9 +46,9 @@ function _issueIsFormatted(issue) {
   return body && (userstoryRegex.test(body) || bugRegex.test(body));
 }
 
-function _checkIssueMessage(comments, labels, issue) {
+function _checkIssueMessage(rules, labels, issue) {
   if(!_issueIsFormatted(issue)) {
-    comments.push(
+    rules.push(
       'Your issue should be in [User Story](USERSTORY_LINK) or [Bug](BUG_LINK) format.'
         .replace('USERSTORY_LINK', USERSTORY_LINK)
         .replace('BUG_LINK', BUG_LINK)
@@ -54,7 +58,7 @@ function _checkIssueMessage(comments, labels, issue) {
   }
 }
 
-function _checkIssueFormatting(comments, labels, issue) {
+function _checkIssueFormatting(rules, labels, issue) {
   if(_issueIsFormatted(issue)) {
     var index = labels.indexOf(LABELS.NEEDS_FORMATTING);
     if(index > -1) {
@@ -63,55 +67,66 @@ function _checkIssueFormatting(comments, labels, issue) {
   }
 }
 
-module.exports = function githubController(config, callback) {
-  config = extend(true, {
-    USER_AGENT: '',
-    USER_AGENT_EMAIL: '',
-    SECRET: '',
-    MEMORYOVERFLOW_OWNER: '',
-    MEMORYOVERFLOW_PROJECT: '',
-    event: '',
-    post: ''
-  }, config);
+function _checkVotes(rules, labels, issue, comment, github, USER_AGENT, callback) {
+  if(comment.body.indexOf(VOTE_SYMBOL) > -1) {
 
-  var issue = config.post.issue,
-      github = null,
-      comments = [],
-      labels = [],
-      labelsChanged = false,
-      checkbox = '- [ ] ';
+    var voteLabels = [],
+        labelKey;
 
-  if(issue.labels) {
-    labels = issue.labels.map(function(label) {
-      return label.name;
+    for(labelKey in LABELS) {
+      if(labelKey.indexOf('VOTE_') === 0) {
+        voteLabels.push(labelKey);
+      }
+    }
+    voteLabels.sort();
+
+    github.exec(github.issues.getComments, {
+      number: issue.number
+    }, function(error, comments) {
+
+      for(var i = 0, len = voteLabels.length; i < len; i++) {
+        var index = labels.indexOf(LABELS[voteLabels[i]]);
+        if(index > -1) {
+          labels.splice(index, 1);
+        }
+      }
+
+      var votes = 0;
+
+      if(comments && comments.length > 0) {
+        for(var i = 0, len = comments.length; i < len; i++) {
+          if(
+            issue.user.login != comments[i].user.login &&
+            comments[i].user.login.toLowerCase() != USER_AGENT.toLowerCase() &&
+            comments[i].body.indexOf(VOTE_SYMBOL) > -1
+          ) {
+            votes++;
+          }
+        }
+      }
+
+      for(var i = voteLabels.length - 1; i >= 0; i--) {
+        var number = parseInt(voteLabels[i].replace('VOTE_', ''), 10);
+        if(votes >= number) {
+          labels.push(LABELS[voteLabels[i]]);
+          break;
+        }
+      }
+
+      callback();
     });
   }
-  var labelsOrigin = JSON.stringify(labels);
+}
 
-  // new issue
-  if(config.event == 'issues' && config.post.action == 'opened') {
-    _checkIssueMessage(comments, labels, issue);
-  }
-  // commented issue
-  else if(config.event == 'issue_comment' && config.post.action == 'created') {
-    var comment = config.post.comment;
+function _applyChanges(rules, issue, labels, labelsOrigin, github, callback) {
+  var checkbox = '- [ ] ',
+      labelsChanged = labelsOrigin != JSON.stringify(labels);
 
-    if(labels.indexOf(LABELS.NEEDS_FORMATTING) > -1 && issue.user.login == comment.user.login) {
-      _checkIssueFormatting(comments, labels, issue);
-    }
-  }
-
-  labelsChanged = labelsOrigin != JSON.stringify(labels);
-
-  if(comments.length > 0 || labelsChanged) {
-    github = _github(config.MEMORYOVERFLOW_OWNER, config.MEMORYOVERFLOW_PROJECT, config.USER_AGENT, config.SECRET);
-  }
-
-  if(comments.length > 0) {
+  if(rules.length > 0) {
     var commentBody =
       ':+1: Thanks for your issue **Agent ' + issue.user.login + '!**\n\n' +
       'However, The Machine has very specific contribution rules. Please update your issue by following these goals:\n' +
-      checkbox + comments.join('\n' + checkbox) + '\n\n' +
+      checkbox + rules.join('\n' + checkbox) + '\n\n' +
       'When you have updated your issue, add a comment below to inform me.';
 
     github.exec(github.issues.createComment, {
@@ -129,6 +144,57 @@ module.exports = function githubController(config, callback) {
     }, function() {
       console.log('labels updated: ', labels);
     });
+  }
+
+  callback();
+}
+
+module.exports = function githubController(config, callback) {
+  config = extend(true, {
+    USER_AGENT: '',
+    USER_AGENT_EMAIL: '',
+    SECRET: '',
+    MEMORYOVERFLOW_OWNER: '',
+    MEMORYOVERFLOW_PROJECT: '',
+    event: '',
+    post: ''
+  }, config);
+
+  var issue = config.post.issue,
+      github = _github(config.MEMORYOVERFLOW_OWNER, config.MEMORYOVERFLOW_PROJECT, config.USER_AGENT, config.SECRET),
+      rules = [],
+      labels = [];
+
+  if(issue.labels) {
+    labels = issue.labels.map(function(label) {
+      return label.name;
+    });
+  }
+  var labelsOrigin = JSON.stringify(labels);
+
+  // new issue
+  if(config.event == 'issues' && config.post.action == 'opened') {
+    _checkIssueMessage(rules, labels, issue);
+
+    _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
+
+    return;
+  }
+  // commented issue
+  else if(config.event == 'issue_comment' && config.post.action == 'created') {
+    var comment = config.post.comment;
+
+    // remove needs formating label case
+    if(labels.indexOf(LABELS.NEEDS_FORMATTING) > -1 && issue.user.login == comment.user.login) {
+      _checkIssueFormatting(rules, labels, issue);
+    }
+
+    // update votes label
+    _checkVotes(rules, labels, issue, comment, github, config.USER_AGENT, function() {
+      _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
+    });
+
+    return;
   }
 
   callback();
