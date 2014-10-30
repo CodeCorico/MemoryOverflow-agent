@@ -1,6 +1,6 @@
 'use strict';
 
-// http://mikedeboer.github.io/node-github/
+// github module doc: http://mikedeboer.github.io/node-github
 
 var GitHubApi = require('github'),
     extend = require('extend'),
@@ -22,6 +22,35 @@ var GitHubApi = require('github'),
     COMMIT_TYPES = ['mo', 'chore', 'feat', 'fix', 'test', 'card', 'rules', 'tpl', 'style', 'refactor', 'perf'],
     VOTE_SYMBOL = '+1';
 
+module.exports = function githubController(config, callback) {
+  config = extend(true, {
+    USER_AGENT: '',
+    USER_AGENT_EMAIL: '',
+    SECRET: '',
+    MEMORYOVERFLOW_OWNER: '',
+    MEMORYOVERFLOW_PROJECT: '',
+    event: '',
+    post: ''
+  }, config);
+
+  var issue = config.post.issue || config.post.pull_request,
+      github = _github(config.MEMORYOVERFLOW_OWNER, config.MEMORYOVERFLOW_PROJECT, config.USER_AGENT, config.SECRET);
+
+  // get issue labels for PR
+  if(!issue.labels) {
+    github.exec(github.issues.getIssueLabels, {
+      number: issue.number
+    }, function(error, labels) {
+      issue.labels = labels;
+      _controller(config, github, issue, callback);
+    });
+
+    return;
+  }
+
+  _controller(config, github, issue, callback);
+};
+
 function _github(OWNER, PROJECT, AGENT, SECRET) {
   var github = new GitHubApi({
     version: '3.0.0'
@@ -41,6 +70,72 @@ function _github(OWNER, PROJECT, AGENT, SECRET) {
   };
 
   return github;
+}
+
+function _controller(config, github, issue, callback) {
+  var rules = [],
+      labels = issue.labels.map(function(label) {
+        return label.name;
+      }),
+      labelsOrigin = JSON.stringify(labels);
+
+  // new issue
+  if(config.event == 'issues' && config.post.action == 'opened') {
+    _checkIssueMessage(rules, labels, issue);
+
+    _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
+
+    return;
+  }
+
+  // new PR
+  else if(config.event == 'pull_request' && config.post.action == 'opened') {
+    // add/remove label and post comment
+    _checkPR(rules, labels, issue, github, true, function() {
+      _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
+    });
+
+    return;
+  }
+
+  // commented issue (or PR)
+  else if(config.event == 'issue_comment' && config.post.action == 'created') {
+    var comment = config.post.comment;
+
+    // if PR
+    if(issue.pull_request) {
+
+      // just add/remove label
+      console.log('checkPR');
+      _checkPR(rules, labels, issue, github, false, function() {
+
+        // update votes label
+        console.log('checkVotes');
+        _checkVotes(rules, labels, issue, comment, github, config.USER_AGENT, function() {
+          console.log('applyChanges', labels, labelsOrigin);
+          _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
+        });
+      });
+    }
+
+    // if simple issue
+    else {
+
+      // remove needs formating label case
+      if(labels.indexOf(LABELS.NEEDS_FORMATTING) > -1 && issue.user.login == comment.user.login) {
+        _checkIssueFormatting(rules, labels, issue);
+      }
+
+      // update votes label
+      _checkVotes(rules, labels, issue, comment, github, config.USER_AGENT, function() {
+        _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
+      });
+    }
+
+    return;
+  }
+
+  callback();
 }
 
 function _issueIsFormatted(issue) {
@@ -122,10 +217,14 @@ function _checkVotes(rules, labels, issue, comment, github, USER_AGENT, callback
 
       callback();
     });
+
+    return;
   }
+
+  callback();
 }
 
-function _checkPR(rules, labels, issue, github, callback) {
+function _checkPR(rules, labels, issue, github, postComment, callback) {
   github.exec(github.pullRequests.getCommits, {
     number: issue.number
   }, function(error, commits) {
@@ -141,25 +240,37 @@ function _checkPR(rules, labels, issue, github, callback) {
           message = commit.commit.message
             .replace(/\r\n/g, '\n')
             .replace(/\r/g, '\n'),
-          subject = message.split('\n')[0];
+          subject = message.split('\n')[0],
+          index = labels.indexOf(LABELS.NEEDS_COMMIT_GUIDELINES);
+
+      if(index > -1) {
+        labels.splice(index, 1);
+      }
 
       var search = messageRegex.exec(subject);
 
+      console.log(labels);
+      console.log(search);
+
       if(!search) {
-        rules.push(
-          'Your commit SHA does not match the [Commit message format](COMMIT_LINK).'
-            .replace(/SHA/g, commit.sha)
-            .replace(/COMMIT_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.COMMIT)
-        );
+        if(postComment) {
+          rules.push(
+            'Your commit SHA does not match the [Commit message format](COMMIT_LINK).'
+              .replace(/SHA/g, commit.sha)
+              .replace(/COMMIT_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.COMMIT)
+          );
+        }
 
         labels.push(LABELS.NEEDS_COMMIT_GUIDELINES);
       }
       else if(search.length < 2 || COMMIT_TYPES.indexOf(search[1].toLowerCase()) === -1) {
-        rules.push(
-          'Your commit SHA uses an [unallowed type](TYPES_LINK).'
-            .replace(/SHA/g, commit.sha)
-            .replace(/COMMIT_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.COMMIT)
-        );
+        if(postComment) {
+          rules.push(
+            'Your commit SHA uses an [unallowed type](TYPES_LINK).'
+              .replace(/SHA/g, commit.sha)
+              .replace(/COMMIT_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.COMMIT)
+          );
+        }
 
         labels.push(LABELS.NEEDS_COMMIT_GUIDELINES);
       }
@@ -192,78 +303,6 @@ function _applyChanges(rules, issue, labels, labelsOrigin, github, callback) {
       number: issue.number,
       labels: labels
     }, function() { });
-  }
-
-  callback();
-}
-
-module.exports = function githubController(config, callback) {
-  config = extend(true, {
-    USER_AGENT: '',
-    USER_AGENT_EMAIL: '',
-    SECRET: '',
-    MEMORYOVERFLOW_OWNER: '',
-    MEMORYOVERFLOW_PROJECT: '',
-    event: '',
-    post: ''
-  }, config);
-
-  var issue = config.post.issue || config.post.pull_request,
-      github = _github(config.MEMORYOVERFLOW_OWNER, config.MEMORYOVERFLOW_PROJECT, config.USER_AGENT, config.SECRET);
-
-  if(!issue.labels) {
-    github.exec(github.issues.getIssueLabels, {
-      number: issue.number
-    }, function(error, labels) {
-      issue.labels = labels;
-      _start(config, github, issue, callback);
-    });
-
-    return;
-  }
-
-  _start(config, github, issue, callback);
-};
-
-function _start(config, github, issue, callback) {
-
-  var rules = [],
-      labels = issue.labels.map(function(label) {
-        return label.name;
-      }),
-      labelsOrigin = JSON.stringify(labels);
-
-  // new issue
-  if(config.event == 'issues' && config.post.action == 'opened') {
-    _checkIssueMessage(rules, labels, issue);
-
-    _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
-
-    return;
-  }
-  // commented issue
-  else if(config.event == 'issue_comment' && config.post.action == 'created') {
-    var comment = config.post.comment;
-
-    // remove needs formating label case
-    if(labels.indexOf(LABELS.NEEDS_FORMATTING) > -1 && issue.user.login == comment.user.login) {
-      _checkIssueFormatting(rules, labels, issue);
-    }
-
-    // update votes label
-    _checkVotes(rules, labels, issue, comment, github, config.USER_AGENT, function() {
-      _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
-    });
-
-    return;
-  }
-  // new PR
-  else if(config.event == 'pull_request' && config.post.action == 'opened') {
-    _checkPR(rules, labels, issue, github, function() {
-      _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
-    });
-
-    return;
   }
 
   callback();
