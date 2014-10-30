@@ -1,10 +1,10 @@
-# MemoryOverflow Publish
+# MemoryOverflow Agent
 
-[![Build Status](https://travis-ci.org/CodeCorico/MemoryOverflow-publish.svg)](https://travis-ci.org/CodeCorico/MemoryOverflow-publish)
-[![Coverage Status](https://img.shields.io/coveralls/CodeCorico/MemoryOverflow-publish.svg)](https://coveralls.io/r/CodeCorico/MemoryOverflow-publish)
-[![Website Status](http://publish.memoryoverflow.org/status.svg)](https://github.com/CodeCorico/MemoryOverflow-website)
+[![Build Status](https://travis-ci.org/CodeCorico/MemoryOverflow-agent.svg)](https://travis-ci.org/CodeCorico/MemoryOverflow-agent)
+[![Coverage Status](https://img.shields.io/coveralls/CodeCorico/MemoryOverflow-agent.svg)](https://coveralls.io/r/CodeCorico/MemoryOverflow-agent)
+[![Website Status](http://agent.memoryoverflow.org/status.svg)](https://github.com/CodeCorico/MemoryOverflow-website)
 
-Automated website publication system.
+The Machine Special Agent for automated tasks.
 
 :exclamation: This repo does't take PR contribution. It's maintained by the CodeCorico team but you can still post issues.
 

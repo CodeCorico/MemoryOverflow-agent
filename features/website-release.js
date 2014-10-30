@@ -38,7 +38,7 @@ function _success(callback) {
   return true;
 }
 
-module.exports = function release(config, callback) {
+module.exports = function websiteRelease(config, callback) {
   config = extend(true, {
     USER_AGENT: '',
     SECRET: '',

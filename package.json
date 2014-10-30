@@ -1,25 +1,27 @@
 {
-  "name": "memoryoverflow-publish",
-  "description": "Automated website publication system",
+  "name": "memoryoverflow-agent",
+  "description": "The Machine Special Agent for automated tasks",
   "author": "CodeCorico",
   "bugs": {
-    "url": "https://github.com/CodeCorico/MemoryOverflow-publish/issues"
+    "url": "https://github.com/CodeCorico/MemoryOverflow-agent/issues"
   },
   "version": "0.0.1",
-  "main": "publish.js",
+  "main": "agent.js",
   "scripts": {
-    "start": "node publish.js",
-    "test": "mocha --reporter spec --bail --check-leaks",
-    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks"
+    "start": "node agent.js",
+    "test": "mocha --timeout 10000 --reporter spec --bail --check-leaks",
+    "test-cover": "istanbul cover node_modules/mocha/bin/_mocha -- --report dot --timeout 10000 --reporter spec --check-leaks",
+    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --timeout 10000 --reporter spec --check-leaks"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/CodeCorico/MemoryOverflow-publish.git"
+    "url": "https://github.com/CodeCorico/MemoryOverflow-agent.git"
   },
   "dependencies": {
     "extend": "^2.0.0",
     "fs-extra": "^0.12.0",
     "glob": "^4.0.6",
+    "istanbul": "^0.3.2",
     "worker-farm": "^1.0.1"
   },
   "devDependencies": {
@@ -30,6 +32,6 @@
   },
   "licenses": [{
     "type": "MIT",
-    "url": "https://github.com/CodeCorico/MemoryOverflow-publish.git"
+    "url": "https://github.com/CodeCorico/MemoryOverflow-agent/blob/master/LICENSE"
   }]
 }

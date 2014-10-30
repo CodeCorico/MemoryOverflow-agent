@@ -4,7 +4,7 @@
   var crypto = require('crypto'),
       fs = require('fs-extra'),
       workerFarm = require('worker-farm'),
-      releaseWorker = workerFarm(require.resolve('./features/release.js')),
+      websiteReleaseWorker = workerFarm(require.resolve('./features/website-release.js')),
       Server = require('./features/server.js'),
       buildStatus = require('./features/build-status/build-status.js'),
 
@@ -29,6 +29,11 @@
         hash = crypto.createHmac('sha1', SECRET).update(body).digest('hex'),
         post = JSON.parse(body);
 
+    console.log(request.headers);
+    console.log('\n\n');
+    console.log(post);
+    return response.ok();
+
     signature = signature ? signature.replace('sha1=', '') : signature;
 
     if(event != 'push' || signature != hash) {
@@ -42,25 +47,31 @@
       return response.forbidden();
     }
 
-    buildStatus.status('processing');
+    if(post.action == 'push') {
+      buildStatus.status('processing');
 
-    releaseWorker({
-      USER_AGENT: USER_AGENT,
-      USER_AGENT_EMAIL: USER_AGENT_EMAIL,
-      SECRET: SECRET,
-      MEMORYOVERFLOW_REPO: MEMORYOVERFLOW_REPO,
-      MEMORYOVERFLOW_PATH: MEMORYOVERFLOW_PATH,
-      THEMACHINE_PATH: THEMACHINE_PATH,
-      WEBSITE_REPO: WEBSITE_REPO,
-      WEBSITE_PATH: WEBSITE_PATH,
-      COMMIT_LABEL: COMMIT_LABEL,
-      commitID: commitID,
-      commitUrl: commitUrl
-    }, function(success) {
+      websiteReleaseWorker({
+        USER_AGENT: USER_AGENT,
+        USER_AGENT_EMAIL: USER_AGENT_EMAIL,
+        SECRET: SECRET,
+        MEMORYOVERFLOW_REPO: MEMORYOVERFLOW_REPO,
+        MEMORYOVERFLOW_PATH: MEMORYOVERFLOW_PATH,
+        THEMACHINE_PATH: THEMACHINE_PATH,
+        WEBSITE_REPO: WEBSITE_REPO,
+        WEBSITE_PATH: WEBSITE_PATH,
+        COMMIT_LABEL: COMMIT_LABEL,
+        commitID: commitID,
+        commitUrl: commitUrl
+      }, function(success) {
+        buildStatus.status(success ? 'ok' : 'error');
+      });
+    }
+    else if(post.action == 'pull_request') {
 
-      buildStatus.status(success ? 'ok' : 'error');
+    }
+    else if(post.action == 'issues') {
 
-    });
+    }
 
     response.ok();
   });
