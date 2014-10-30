@@ -1,3 +1,5 @@
+'use strict';
+
 var extend = require('extend'),
     fs = require('fs-extra'),
     cmd = require('child_process'),
@@ -41,6 +43,7 @@ function _success(callback) {
 module.exports = function websiteRelease(config, callback) {
   config = extend(true, {
     USER_AGENT: '',
+    USER_AGENT_EMAIL: '',
     SECRET: '',
     MEMORYOVERFLOW_REPO: '',
     MEMORYOVERFLOW_PATH: '',
@@ -172,7 +175,7 @@ module.exports = function websiteRelease(config, callback) {
 
                       var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
 
-                      console.log('\ngit push ' + pushRepo + ' gh-pages');
+                      console.log('\ngit push ' + pushRepo.replace(SECRET, 'SECRET') + ' gh-pages');
 
                       cmd.exec('git push ' + pushRepo + ' gh-pages', {
                         cwd: config.WEBSITE_PATH
