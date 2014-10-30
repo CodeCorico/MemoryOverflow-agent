@@ -65,9 +65,9 @@
       });
     }
     else if(
-      (event == 'pull_request' && post.action == 'opened') ||
       (event == 'issues' && post.action == 'opened') ||
-      (event == 'issue_comment' && post.action == 'created')
+      (event == 'issue_comment' && post.action == 'created') ||
+      (event == 'pull_request' && post.action == 'opened')
     ) {
 
       githubControllerWorker({

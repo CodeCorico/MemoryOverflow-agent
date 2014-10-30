@@ -16,13 +16,17 @@ When the website code or content changes, MemoryOverflowAgent update the officia
 
 ### Issue conventions
 
-When an Agent post a new issue, MemoryOverflowAgent checks if it follows [the conventions](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md). Otherwise he post a comment on the issue that explains how to fix the message and add the `needs: user story/bug format` label.
+When an Agent post a new issue, MemoryOverflowAgent checks if it follows [the conventions](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md). Otherwise he posts a comment on the issue that explains how to fix the message and add the `needs: user story/bug format` label.
 
 If an Agent fix its issue, he has to add a new comment in it so that MemoryOverflowAgent checks again the format.If the format is ok, he remove the `needs: user story/bug format` label.
 
 ### Votes
 
 When an Agent post a new comment on an issue with a :+1: (or just `+1`) MemoryOverflowAgent counts every vote and apply `votes: +10`, `votes: +20` or `votes: +50` label on the issue. This helps to use priority filters on the main repo.
+
+### Pull requests
+
+When an Agent publish a new Pull Request, MemoryOverflowAgent checks if its commits follow the [commit message format](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#commit-message-format') and use [existing types](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#type). Otherwise he posts a comment on the PR issue that explains how to fix the commits and add the `needs: commit guidelines` label.
 
 ## Follow the project
 

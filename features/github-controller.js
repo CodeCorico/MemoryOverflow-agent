@@ -7,12 +7,19 @@ var GitHubApi = require('github'),
 
     LABELS = {
       NEEDS_FORMATTING: 'needs: user story/bug format',
+      NEEDS_COMMIT_GUIDELINES: 'needs: commit guidelines',
       VOTE_10: 'votes: +10',
       VOTE_20: 'votes: +20',
       VOTE_50: 'votes: +50'
     },
-    USERSTORY_LINK = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-user-story-for-a-new-feature',
-    BUG_LINK = 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#write-a-how-to-reproduce-for-a-bug',
+    CONTRIBUTING = {
+      URL: 'https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md',
+      USERSTORY: '#write-a-user-story-for-a-new-feature',
+      BUG: '#write-a-how-to-reproduce-for-a-bug',
+      COMMIT: '#commit-message-format',
+      TYPES: '#type'
+    },
+    COMMIT_TYPES = ['mo', 'chore', 'feat', 'fix', 'test', 'card', 'rules', 'tpl', 'style', 'refactor', 'perf'],
     VOTE_SYMBOL = '+1';
 
 function _github(OWNER, PROJECT, AGENT, SECRET) {
@@ -50,8 +57,8 @@ function _checkIssueMessage(rules, labels, issue) {
   if(!_issueIsFormatted(issue)) {
     rules.push(
       'Your issue should be in [User Story](USERSTORY_LINK) or [Bug](BUG_LINK) format.'
-        .replace('USERSTORY_LINK', USERSTORY_LINK)
-        .replace('BUG_LINK', BUG_LINK)
+        .replace(/USERSTORY_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.USERSTORY)
+        .replace(/BUG_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.BUG)
     );
 
     labels.push(LABELS.NEEDS_FORMATTING);
@@ -118,32 +125,73 @@ function _checkVotes(rules, labels, issue, comment, github, USER_AGENT, callback
   }
 }
 
+function _checkPR(rules, labels, issue, github, callback) {
+  github.exec(github.pullRequests.getCommits, {
+    number: issue.number
+  }, function(error, commits) {
+
+    if(!commits) {
+      callback();
+      return;
+    }
+
+    for(var i = 0, len = commits.length; i < len; i++) {
+      var commit = commits[i],
+          messageRegex = /^(\w+)\([\w -\$]+\): .*/, // <type>(<scope>): <subject>
+          message = commit.commit.message
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n'),
+          subject = message.split('\n')[0];
+
+      var search = messageRegex.exec(subject);
+
+      if(!search) {
+        rules.push(
+          'Your commit SHA does not match the [Commit message format](COMMIT_LINK).'
+            .replace(/SHA/g, commit.sha)
+            .replace(/COMMIT_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.COMMIT)
+        );
+
+        labels.push(LABELS.NEEDS_COMMIT_GUIDELINES);
+      }
+      else if(search.length < 2 || COMMIT_TYPES.indexOf(search[1].toLowerCase()) === -1) {
+        rules.push(
+          'Your commit SHA uses an [unallowed type](TYPES_LINK).'
+            .replace(/SHA/g, commit.sha)
+            .replace(/COMMIT_LINK/g, CONTRIBUTING.URL + CONTRIBUTING.COMMIT)
+        );
+
+        labels.push(LABELS.NEEDS_COMMIT_GUIDELINES);
+      }
+    }
+
+    callback();
+
+  });
+}
+
 function _applyChanges(rules, issue, labels, labelsOrigin, github, callback) {
   var checkbox = '- [ ] ',
       labelsChanged = labelsOrigin != JSON.stringify(labels);
 
   if(rules.length > 0) {
     var commentBody =
-      ':+1: Thanks for your issue **Agent ' + issue.user.login + '!**\n\n' +
-      'However, The Machine has very specific contribution rules. Please update your issue by following these goals:\n' +
+      ':+1: Thanks for your contribution **Agent ' + issue.user.login + '!**\n\n' +
+      'However, The Machine has very specific contribution rules. Please update your contribution by following these goals:\n' +
       checkbox + rules.join('\n' + checkbox) + '\n\n' +
-      'When you have updated your issue, add a comment below to inform me.';
+      'When you have updated your work, add a comment below to inform me.';
 
     github.exec(github.issues.createComment, {
       number: issue.number,
       body: commentBody
-    }, function() {
-      console.log('commented');
-    });
+    }, function() { });
   }
 
   if(labelsChanged) {
     github.exec(github.issues.edit, {
       number: issue.number,
       labels: labels
-    }, function() {
-      console.log('labels updated: ', labels);
-    });
+    }, function() { });
   }
 
   callback();
@@ -160,17 +208,30 @@ module.exports = function githubController(config, callback) {
     post: ''
   }, config);
 
-  var issue = config.post.issue,
-      github = _github(config.MEMORYOVERFLOW_OWNER, config.MEMORYOVERFLOW_PROJECT, config.USER_AGENT, config.SECRET),
-      rules = [],
-      labels = [];
+  var issue = config.post.issue || config.post.pull_request,
+      github = _github(config.MEMORYOVERFLOW_OWNER, config.MEMORYOVERFLOW_PROJECT, config.USER_AGENT, config.SECRET);
 
-  if(issue.labels) {
-    labels = issue.labels.map(function(label) {
-      return label.name;
+  if(!issue.labels) {
+    github.exec(github.issues.getIssueLabels, {
+      number: issue.number
+    }, function(error, labels) {
+      issue.labels = labels;
+      _start(config, github, issue, callback);
     });
+
+    return;
   }
-  var labelsOrigin = JSON.stringify(labels);
+
+  _start(config, github, issue, callback);
+};
+
+function _start(config, github, issue, callback) {
+
+  var rules = [],
+      labels = issue.labels.map(function(label) {
+        return label.name;
+      }),
+      labelsOrigin = JSON.stringify(labels);
 
   // new issue
   if(config.event == 'issues' && config.post.action == 'opened') {
@@ -196,6 +257,14 @@ module.exports = function githubController(config, callback) {
 
     return;
   }
+  // new PR
+  else if(config.event == 'pull_request' && config.post.action == 'opened') {
+    _checkPR(rules, labels, issue, github, function() {
+      _applyChanges(rules, issue, labels, labelsOrigin, github, callback);
+    });
+
+    return;
+  }
 
   callback();
-};
+}
