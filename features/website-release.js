@@ -175,7 +175,7 @@ module.exports = function websiteRelease(config, callback) {
 
                       var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
 
-                      console.log('\ngit push ' + pushRepo.replace(SECRET, 'SECRET') + ' gh-pages');
+                      console.log('\ngit push ' + pushRepo.replace(config.SECRET, 'SECRET') + ' gh-pages');
 
                       cmd.exec('git push ' + pushRepo + ' gh-pages', {
                         cwd: config.WEBSITE_PATH
