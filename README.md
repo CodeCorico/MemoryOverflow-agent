@@ -20,13 +20,17 @@ When an Agent post a new issue, MemoryOverflowAgent checks if it follows [the co
 
 If an Agent fix its issue, he has to add a new comment in it so that MemoryOverflowAgent checks again the format. If the format is ok, he remove the `needs: user story/bug format` label.
 
+![Agent bad issue format message](assets/readme-agent-issue.jpg)
+
 ### Votes
 
 When an Agent post a new comment on an issue with a :+1: (or just `+1`) MemoryOverflowAgent counts every vote and apply `votes: +10`, `votes: +20` or `votes: +50` label on the issue. This helps to use priority filters on the main repo.
 
+![Agent votes label](assets/readme-agent-votes.jpg)
+
 ### Pull requests
 
-When an Agent publish a new Pull Request, MemoryOverflowAgent checks if its commits follow the [commit message format](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#commit-message-format') and use [existing types](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#type). Otherwise he posts a comment on the PR issue that explains how to fix the commits and add the `needs: commit guidelines` label.
+In the same way as the issues, when an Agent publish a new Pull Request, MemoryOverflowAgent checks if its commits follow the [commit message format](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#commit-message-format') and use [existing types](https://github.com/CodeCorico/MemoryOverflow/blob/master/CONTRIBUTING.md#type). Otherwise he posts a comment on the PR issue that explains how to fix the commits and add the `needs: commit guidelines` label.
 
 If an Agent fix its PR commits, he has to add a new comment in the PR issue so that MemoryOverflowAgent checks again the format. If the format is ok, he remove the `needs: commit guidelines` label.
 
