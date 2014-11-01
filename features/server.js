@@ -6,10 +6,7 @@ var Response = function(response) {
 
   this.ok = function(result) {
     result = result || {};
-
-    if(typeof result.success == 'undefined') {
-      result.success = true;
-    }
+    result.success = true;
 
     response.writeHead(200, {
       'Content-Type': 'text/plain'
@@ -22,6 +19,11 @@ var Response = function(response) {
     return response.end('Forbidden.');
   };
 
+  this.flood = function() {
+    response.writeHead(418);
+    return response.end('');
+  };
+
 };
 
 var Server = function(port, requestFunction) {
@@ -30,17 +32,28 @@ var Server = function(port, requestFunction) {
 
     response = new Response(response);
 
+    var flood = false;
+
     if(request.method == 'POST') {
       var body = '';
       request.on('data', function (data) {
+        if(flood) {
+          return;
+        }
+
         body += data;
         // 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
         if (body.length > 1e6) {
           // FLOOD ATTACK OR FAULTY CLIENT, NUKE REQUEST
-          request.connection.destroy();
+          flood = true;
+          body = '';
         }
       });
       request.on('end', function () {
+        if(flood) {
+          return response.flood();
+        }
+
         requestFunction(request, response, body);
       });
     }
