@@ -23,6 +23,8 @@
       THEMACHINE_PATH = 'the-machine',
       COMMIT_LABEL = 'release: master-{commitID}\n\nMemoryOverflow commit origin: {commitUrl}';
 
+  buildStatus.status('ok');
+
   new Server(SERVER_PORT, function(request, response, body) {
     if (request.method == 'GET' && request.url == '/status.svg') {
       var filePath = path.join(__dirname, 'status.svg');
