@@ -24,6 +24,8 @@ var Response = function(response) {
     return response.end('');
   };
 
+  this.response = response;
+
 };
 
 var Server = function(port, requestFunction) {

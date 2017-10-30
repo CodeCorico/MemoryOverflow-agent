@@ -2,6 +2,7 @@
   'use strict';
 
   var crypto = require('crypto'),
+      path = require('path'),
       fs = require('fs-extra'),
       workerFarm = require('worker-farm'),
       websiteReleaseWorker = workerFarm(require.resolve('./features/website-release.js')),
@@ -23,6 +24,21 @@
       COMMIT_LABEL = 'release: master-{commitID}\n\nMemoryOverflow commit origin: {commitUrl}';
 
   new Server(SERVER_PORT, function(request, response, body) {
+    if (request.method == 'GET' && request.url == '/status.svg') {
+      var filePath = path.join(__dirname, 'status.svg');
+      var stat = fs.statSync(filePath);
+
+      response.response.writeHead(200, {
+          'Content-Type': 'image/svg+xml',
+          'Content-Length': stat.size
+      });
+
+      var readStream = fs.createReadStream(filePath);
+      readStream.pipe(response.response);
+
+      return;
+    }
+
     if(request.method != 'POST') {
       return response.forbidden();
     }
