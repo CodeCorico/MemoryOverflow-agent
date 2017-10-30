@@ -64,7 +64,7 @@ function _github(OWNER, PROJECT, AGENT, SECRET) {
 
   github.exec = function(func, msg, callback) {
     func(extend(true, msg, {
-      user: OWNER,
+      owner: OWNER,
       repo: PROJECT
     }), callback);
   };
