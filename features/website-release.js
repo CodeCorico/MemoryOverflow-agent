@@ -10,15 +10,14 @@ var extend = require('extend'),
 
 function _cleanWorkspace() {
   if(fs.existsSync(WORK_PATH)) {
-    console.log('remove path ' + WORK_PATH);
+    console.log(_date() + 'Cleaning workspace...');
     fs.removeSync(WORK_PATH);
   }
 }
 
 function _error(error, callback) {
-  console.error('\n\nERROR!\n');
+  console.error(_date() + 'ERROR!');
   console.error(error);
-  console.error('\n\n');
 
   _cleanWorkspace();
 
@@ -32,13 +31,26 @@ function _error(error, callback) {
 function _success(callback) {
   _cleanWorkspace();
 
-  console.log('\n\nALL IS DONE!\n\n');
+  console.log(_date() + 'Website released');
 
   if(callback) {
     callback(true);
   }
 
   return true;
+}
+
+function _date() {
+  const date = new Date();
+  let hours = date.getHours();
+  let minutes = date.getMinutes();
+  let seconds = date.getSeconds();
+
+  hours = hours > 9 ? hours : `0${hours}`;
+  minutes = minutes > 9 ? minutes : `0${minutes}`;
+  seconds = seconds > 9 ? seconds : `0${seconds}`;
+
+  return `[${hours}:${minutes}:${seconds}] `;
 }
 
 module.exports = function websiteRelease(config, callback) {
@@ -63,14 +75,14 @@ module.exports = function websiteRelease(config, callback) {
   config.THEMACHINE_PATH = config.MEMORYOVERFLOW_PATH + '/' + config.THEMACHINE_PATH;
   config.WEBSITE_ABSOLUTE_PATH = path.join(__dirname, '..', config.WEBSITE_PATH);
 
-  console.log('\ngit clone --depth 1 ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH + '...');
+  console.log(_date() + 'Cloning The Machine...');
 
   cmd.exec('git clone --depth 1 ' + config.MEMORYOVERFLOW_REPO + ' ' + config.MEMORYOVERFLOW_PATH, function(error) {
     if(error) {
       return _error(error, callback);
     }
 
-    console.log('\ninstall The Machine...');
+    console.log(_date() + 'Installing The Machine...');
 
     cmd.exec('npm install', {
       cwd: config.THEMACHINE_PATH
@@ -79,18 +91,16 @@ module.exports = function websiteRelease(config, callback) {
         return _error(error, callback);
       }
 
-      console.log('\nCreate the .env...');
-
       fs.writeFileSync(config.THEMACHINE_PATH + '/.env', 'WEBSITE_TARGET=' + config.WEBSITE_ABSOLUTE_PATH);
 
-      console.log('\ngit clone ' + config.WEBSITE_REPO + ' ' + config.WEBSITE_PATH + '...');
+      console.log(_date() + 'Cloning the website...');
 
       cmd.exec('git clone ' + config.WEBSITE_REPO + ' ' + config.WEBSITE_PATH, function(error) {
         if(error) {
           return _error(error, callback);
         }
 
-        console.log('\nexecute The Machine...');
+        console.log(_date() + 'Starting The Machine...');
 
         cmd.exec('npm run generate', {
           cwd: config.THEMACHINE_PATH
@@ -99,7 +109,7 @@ module.exports = function websiteRelease(config, callback) {
             return _error(error, callback);
           }
 
-          console.log('\ngit config user.name "' + config.USER_AGENT + '"');
+          console.log(_date() + 'Pushing the new website release...')
 
           cmd.exec('git config user.name "' + config.USER_AGENT + '"', {
             cwd: config.WEBSITE_PATH
@@ -108,16 +118,12 @@ module.exports = function websiteRelease(config, callback) {
               return _error(error, callback);
             }
 
-            console.log('\ngit config user.email "' + config.USER_AGENT_EMAIL + '"');
-
             cmd.exec('git config user.email "' + config.USER_AGENT_EMAIL + '"', {
               cwd: config.WEBSITE_PATH
             }, function(error) {
               if(error) {
                 return _error(error, callback);
               }
-
-              console.log('\ngit add -A');
 
               cmd.exec('git add -A', {
                 cwd: config.WEBSITE_PATH
@@ -135,7 +141,7 @@ module.exports = function websiteRelease(config, callback) {
 
                   var status = stdout.split('\n');
                   if(status.length && status[1].trim() == 'nothing to commit, working directory clean') {
-                    console.log('NOTHING TO COMMIT');
+                    console.log(_date() + '[NOTHING TO COMMIT]');
                     return _success(callback);
                   }
 
@@ -149,8 +155,6 @@ module.exports = function websiteRelease(config, callback) {
                         })
                         .join('');
 
-                  console.log('\ngit commit' + commitAuthor + commitLabel);
-
                   cmd.exec('git commit' + commitAuthor + commitLabel, {
                     cwd: config.WEBSITE_PATH
                   }, function(error) {
@@ -159,8 +163,6 @@ module.exports = function websiteRelease(config, callback) {
                     }
 
                     var pushRepo = config.WEBSITE_REPO.replace('https://', 'https://' + config.USER_AGENT + ':' + config.SECRET + '@');
-
-                    console.log('\ngit push ' + pushRepo.replace(config.SECRET, 'SECRET') + ' gh-pages');
 
                     cmd.exec('git push ' + pushRepo + ' gh-pages', {
                       cwd: config.WEBSITE_PATH
