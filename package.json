@@ -21,8 +21,8 @@
     "extend": "^2.0.0",
     "fs-extra": "^0.12.0",
     "github": "^12.0.1",
-    "glob": "^4.0.6",
-    "istanbul": "^0.3.2",
+    "glob": "^5.0.15",
+    "istanbul": "^0.4.5",
     "worker-farm": "^1.0.1"
   },
   "devDependencies": {
